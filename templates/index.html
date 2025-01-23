@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompassTaga Console</title>
+    <script src="/static/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        header {
+            background-color: #1e3d58;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            border-bottom: 4px solid #f4a261;
+        }
+
+        #tabs {
+            display: flex;
+            justify-content: center;
+            background-color: #ddd;
+            border-bottom: 2px solid #aaa;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #333;
+            border: 2px solid transparent;
+        }
+
+        .tab.active {
+            background-color: white;
+            border-top: 2px solid #1e3d58;
+            border-left: 2px solid #1e3d58;
+            border-right: 2px solid #1e3d58;
+            color: #1e3d58;
+        }
+
+        #logs-container {
+            margin: 20px auto;
+            width: 90%;
+            max-width: 800px;
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            padding: 10px;
+        }
+
+        .log-message {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .log-message:last-child {
+            border-bottom: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        CompassTaga Console
+    </header>
+
+    <!-- Tabs -->
+    <div id="tabs">
+        <div id="tab-all" class="tab active">All Logs</div>
+        <div id="tab-incoming" class="tab">Incoming Messages</div>
+        <div id="tab-nmea" class="tab">Sent to NMEA</div>
+    </div>
+
+    <!-- Logs Container -->
+    <div id="logs-all" class="logs">
+        <div id="logs-container-all" class="logs-container"></div>
+    </div>
+    <div id="logs-incoming" class="logs hidden">
+        <div id="logs-container-incoming" class="logs-container"></div>
+    </div>
+    <div id="logs-nmea" class="logs hidden">
+        <div id="logs-container-nmea" class="logs-container"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        const tabs = document.querySelectorAll('.tab');
+        const logsDivAll = document.getElementById('logs-container-all');
+        const logsDivIncoming = document.getElementById('logs-container-incoming');
+        const logsDivNmea = document.getElementById('logs-container-nmea');
+    
+        // Tab switching logic
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                // Hide all log containers
+                document.querySelectorAll('.logs').forEach(l => l.classList.add('hidden'));
+                // Activate the clicked tab
+                tab.classList.add('active');
+                const targetId = `logs-${tab.id.split('-')[1]}`;
+                document.getElementById(targetId).classList.remove('hidden');
+            });
+        });
+    
+        // Add logs to a container (latest on top)
+        const addLog = (logDiv, message) => {
+            const logMessage = document.createElement('div');
+            logMessage.className = 'log-message';
+            logMessage.textContent = message;
+    
+            // Prepend the new log at the top
+            logDiv.insertBefore(logMessage, logDiv.firstChild);
+        };
+    
+        // Handle logs for all categories
+        socket.on('log', (data) => {
+            // Add to "All Logs"
+            addLog(logsDivAll, data.message);
+        });
+    
+        socket.on('incoming_message', (data) => {
+            // Add to "All Logs" and "Incoming Messages"
+            addLog(logsDivAll, data.message);
+            addLog(logsDivIncoming, data.message);
+        });
+    
+        socket.on('nmea_message', (data) => {
+            // Add to "All Logs" and "Sent to NMEA"
+            addLog(logsDivAll, data.message);
+            addLog(logsDivNmea, data.message);
+        });
+    </script>
+</body>
+</html>
